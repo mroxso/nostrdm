@@ -4,8 +4,9 @@ import uuid
 from pynostr.relay_manager import RelayManager
 from pynostr.filters import FiltersList, Filters
 from pynostr.event import EventKind
+from chatWindow import ChatWindow
 
-pubkey = "82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2"
+pubkey = "480ec1a7516406090dc042ddf67780ef30f26f3a864e83b417c053a5a611c838"
 relay = "wss://relay.damus.io"
 # cachedContacts = [{"pubkey": "test", "name":"test"}]
 cachedContacts = []
@@ -81,8 +82,10 @@ def on_listbox_item_click(event):
     # if(selected_index and event.num == 1):
     # TODO: check for double click or enter instead of one click or scroll
     selected_item = listbox.get(selected_index[0])
-    print(selected_item)
-    print("-> " + cachedContacts[selected_index[0]]["pubkey"])
+    name = selected_item
+    pubkey = cachedContacts[selected_index[0]]["pubkey"]
+    print("Opening Chat with " + name + " (" + pubkey + ")")
+    chatWindow = ChatWindow(name=selected_item, pubkey=cachedContacts[selected_index[0]]["pubkey"])
 
 
 root = tk.Tk()
