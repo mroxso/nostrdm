@@ -1,3 +1,4 @@
+import sys
 import tkinter as tk
 import json
 import uuid
@@ -5,8 +6,25 @@ from pynostr.relay_manager import RelayManager
 from pynostr.filters import FiltersList, Filters
 from pynostr.event import EventKind
 from chatWindow import ChatWindow
+from pynostr.key import PrivateKey
 
-pubkey = "480ec1a7516406090dc042ddf67780ef30f26f3a864e83b417c053a5a611c838"
+privatekey = None
+pubkey = None
+
+# Check if the string argument is provided
+if len(sys.argv) > 1:
+    tmp_private_key = sys.argv[1]  # Assuming the string argument is the first argument
+    if len(tmp_private_key) == 64:
+        privatekey = PrivateKey.from_hex(tmp_private_key)
+        pubkey = privatekey.public_key
+        print(f"Private key: {privatekey.bech32()}")
+        print(f"Private key: {privatekey.hex()}")
+        print(f"Public key: {pubkey.bech32()}")
+        print(f"Public key: {pubkey.hex()}")
+else:
+    print("Please provide a privatekey as a command-line argument.")
+    exit()
+
 relay = "wss://relay.damus.io"
 # cachedContacts = [{"pubkey": "test", "name":"test"}]
 cachedContacts = []
@@ -58,7 +76,7 @@ def loadNameForPubkey():
 def loadConversations():
     relay_manager = RelayManager(timeout=2)
     relay_manager.add_relay(relay)
-    filters = FiltersList([Filters(kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE], pubkey_refs=[pubkey])])
+    filters = FiltersList([Filters(kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE], pubkey_refs=[pubkey.hex()])])
     subscription_id = uuid.uuid1().hex
     relay_manager.add_subscription_on_all_relays(subscription_id, filters)
     relay_manager.run_sync()
@@ -85,7 +103,7 @@ def on_listbox_item_click(event):
     name = selected_item
     pubkey = cachedContacts[selected_index[0]]["pubkey"]
     print("Opening Chat with " + name + " (" + pubkey + ")")
-    chatWindow = ChatWindow(name=selected_item, pubkey=cachedContacts[selected_index[0]]["pubkey"])
+    chatWindow = ChatWindow(name=selected_item, receiverpubkey=cachedContacts[selected_index[0]]["pubkey"], relay=relay, pubkey=pubkey, privkey=privatekey)
 
 
 root = tk.Tk()
