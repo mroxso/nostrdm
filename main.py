@@ -82,6 +82,7 @@ def on_listbox_item_click(event):
     # TODO: check for double click or enter instead of one click or scroll
     selected_item = listbox.get(selected_index[0])
     print(selected_item)
+    print("-> " + cachedContacts[selected_index[0]]["pubkey"])
 
 
 root = tk.Tk()
