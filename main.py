@@ -1,5 +1,79 @@
-from App import App
+import tkinter as tk
+import json
+import uuid
+from pynostr.relay_manager import RelayManager
+from pynostr.filters import FiltersList, Filters
+from pynostr.event import EventKind
 
-relay = "wss://relay.damus.io"
 pubkey = "82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2"
-app = App(relay, pubkey)
+
+def loadNameForPubkey():
+    for i in range(listbox.size()):
+        pubkey = listbox.get(i)
+        relay_manager = RelayManager(timeout=2)
+        relay_manager.add_relay("wss://relay.damus.io")
+        filters = FiltersList([Filters(kinds=[EventKind.SET_METADATA], authors=[pubkey], limit=1)])
+        subscription_id = uuid.uuid1().hex
+        relay_manager.add_subscription_on_all_relays(subscription_id, filters)
+        relay_manager.run_sync()
+        while relay_manager.message_pool.has_notices():
+            notice_msg = relay_manager.message_pool.get_notice()
+            print(notice_msg.content)
+        while relay_manager.message_pool.has_events():
+            event_msg = relay_manager.message_pool.get_event()
+            json_content = json.loads(event_msg.event.content)
+            print(json_content)
+
+            try: 
+                if(json_content['display_name'] != ""):
+                    name = json_content["display_name"]
+                elif(json_content['name'] != ""):
+                    name = json_content["name"]
+                elif(json_content['username'] != ""):
+                    name = json_content["username"]
+            except KeyError:
+                name = event_msg.event.pubkey
+
+            # self.tree.item(item=event_msg.event.public_key, text=event_msg.event.public_key, values=(name))
+            # find item with pubkey and update it
+            for i in range(listbox.size()):
+                if(listbox.get(i) == event_msg.event.pubkey):
+                    listbox.delete(i)
+                    listbox.insert(i, name)
+                    break
+            # print(event_msg.event.content)
+        # relay_manager.close_all_relay_connections()
+
+def loadConversations():
+    relay_manager = RelayManager(timeout=2)
+    relay_manager.add_relay("wss://relay.damus.io")
+    filters = FiltersList([Filters(kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE], pubkey_refs=[pubkey])])
+    subscription_id = uuid.uuid1().hex
+    relay_manager.add_subscription_on_all_relays(subscription_id, filters)
+    relay_manager.run_sync()
+    while relay_manager.message_pool.has_notices():
+        notice_msg = relay_manager.message_pool.get_notice()
+        print(notice_msg.content)
+    while relay_manager.message_pool.has_events():
+        event_msg = relay_manager.message_pool.get_event()
+        # json_content = json.loads(event_msg.event)
+        # print(event_msg.event.pubkey)
+        if event_msg.event.pubkey not in listbox.get(0, tk.END):
+            listbox.insert(tk.END, event_msg.event.pubkey)
+
+    loadNameForPubkey()
+
+    relay_manager.close_all_relay_connections()
+
+
+root = tk.Tk()
+root.title("nostrdm")
+root.geometry("500x500")
+
+listbox = tk.Listbox(root)
+listbox.config(width=500, height=500)
+listbox.pack()
+
+loadConversations()
+
+root.mainloop()
