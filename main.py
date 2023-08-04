@@ -6,12 +6,17 @@ from pynostr.filters import FiltersList, Filters
 from pynostr.event import EventKind
 
 pubkey = "82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2"
+relay = "wss://relay.damus.io"
+# cachedContacts = [{"pubkey": "test", "name":"test"}]
+cachedContacts = []
 
 def loadNameForPubkey():
+    print("Total contact names to load: " + str(cachedContacts.__len__()))
     for i in range(listbox.size()):
         pubkey = listbox.get(i)
+        print(str(i+1) + " - Loading name for " + pubkey)
         relay_manager = RelayManager(timeout=2)
-        relay_manager.add_relay("wss://relay.damus.io")
+        relay_manager.add_relay(relay)
         filters = FiltersList([Filters(kinds=[EventKind.SET_METADATA], authors=[pubkey], limit=1)])
         subscription_id = uuid.uuid1().hex
         relay_manager.add_subscription_on_all_relays(subscription_id, filters)
@@ -22,7 +27,7 @@ def loadNameForPubkey():
         while relay_manager.message_pool.has_events():
             event_msg = relay_manager.message_pool.get_event()
             json_content = json.loads(event_msg.event.content)
-            print(json_content)
+            # print(json_content)
 
             try: 
                 if(json_content['display_name'] != ""):
@@ -40,13 +45,18 @@ def loadNameForPubkey():
                 if(listbox.get(i) == event_msg.event.pubkey):
                     listbox.delete(i)
                     listbox.insert(i, name)
+                    for contact in cachedContacts:
+                        if(contact["pubkey"] == event_msg.event.pubkey):
+                            print("\t-> " + name)
+                            contact["name"] = name
+                            break
                     break
             # print(event_msg.event.content)
         # relay_manager.close_all_relay_connections()
 
 def loadConversations():
     relay_manager = RelayManager(timeout=2)
-    relay_manager.add_relay("wss://relay.damus.io")
+    relay_manager.add_relay(relay)
     filters = FiltersList([Filters(kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE], pubkey_refs=[pubkey])])
     subscription_id = uuid.uuid1().hex
     relay_manager.add_subscription_on_all_relays(subscription_id, filters)
@@ -59,6 +69,7 @@ def loadConversations():
         # json_content = json.loads(event_msg.event)
         # print(event_msg.event.pubkey)
         if event_msg.event.pubkey not in listbox.get(0, tk.END):
+            cachedContacts.append({"pubkey": event_msg.event.pubkey, "name": event_msg.event.pubkey})
             listbox.insert(tk.END, event_msg.event.pubkey)
 
     loadNameForPubkey()
@@ -83,5 +94,6 @@ listbox.bind("<<ListboxSelect>>", on_listbox_item_click)
 listbox.pack()
 
 loadConversations()
+# print(cachedContacts)
 
 root.mainloop()
