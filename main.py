@@ -65,6 +65,13 @@ def loadConversations():
 
     relay_manager.close_all_relay_connections()
 
+def on_listbox_item_click(event):
+    selected_index = listbox.curselection()
+    # if(selected_index and event.num == 1):
+    # TODO: check for double click or enter instead of one click or scroll
+    selected_item = listbox.get(selected_index[0])
+    print(selected_item)
+
 
 root = tk.Tk()
 root.title("nostrdm")
@@ -72,6 +79,7 @@ root.geometry("500x500")
 
 listbox = tk.Listbox(root)
 listbox.config(width=500, height=500)
+listbox.bind("<<ListboxSelect>>", on_listbox_item_click)
 listbox.pack()
 
 loadConversations()
